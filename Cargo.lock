@@ -3,5 +3,12 @@
 version = 3
 
 [[package]]
-name = "sport-cli"
+name = "app"
+version = "0.1.0"
+dependencies = [
+ "sport-radar",
+]
+
+[[package]]
+name = "sport-radar"
 version = "0.1.0"

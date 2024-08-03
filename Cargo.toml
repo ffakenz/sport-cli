@@ -1,6 +1,3 @@
-[package]
-name = "sport-cli"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-[dependencies]
+members = ["app", "sport-radar"]
