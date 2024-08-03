@@ -10,9 +10,11 @@
 sport-cli analytics \
     --sport football \
     --event "Premier's League"  \
-    --date-from "2024-08-17"  \
-    --date-to "2025-05-25"  \
+    --location "England"  \
+    --season-from "2024-08-17"  \
+    --season-to "2025-05-25"  \
     --dimension "player" \
+    --gender "male"  \
     --metric "score" \
     --sort "desc" \
     --limit 10 \
@@ -24,10 +26,12 @@ sport-cli analytics \
 sport-cli analytics \
     --sport football \
     --event "Premier's League"  \
+    --location "England"  \
     --date-from "2024-08-17"  \
     --date-to "2025-05-25"  \
     --dimension "player" \
     --metric "assist" \
+    --gender "male"  \
     --sort "desc" \
     --limit 10 \
     --timeout 2000

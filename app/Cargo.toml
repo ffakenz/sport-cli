@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 sport-radar = { path = "../sport-radar" }
+engine = { path = "../engine" }
