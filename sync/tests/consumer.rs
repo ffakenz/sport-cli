@@ -14,6 +14,7 @@ async fn async_consumer_callback_stub(
     let mut invocations = callback_invocations.lock().await;
     *invocations += 1;
     // Simulate async work
+    // FIXME! the test driver should adjust the sleep time considering the sleep
     tokio::time::sleep(Duration::from_millis(100)).await;
     processed_items.lock().await.push(message.clone());
     println!("Consumed: {:?}", message);

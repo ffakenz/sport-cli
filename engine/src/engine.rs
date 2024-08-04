@@ -16,7 +16,6 @@ impl Engine {
                 player_stats.competition.name == query.event
                     && player_stats.competition.location == query.location
                     && player_stats.competition.gender == query.gender
-                    // FIXME! relax date comparison
                     && player_stats.competition.season_start == query.season_start
                     && player_stats.competition.season_end == query.season_end
             })

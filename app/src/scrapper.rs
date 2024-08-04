@@ -145,7 +145,6 @@ impl Scrapper {
             .seasons
             .iter()
             .find(|season| {
-                // FIXME! relax date comparison
                 NaiveDate::parse_from_str(&season.start_date, "%Y-%m-%d").unwrap()
                     == query.season_start
                     && NaiveDate::parse_from_str(&season.end_date, "%Y-%m-%d").unwrap()
@@ -178,16 +177,23 @@ impl Scrapper {
             let client = Arc::clone(&client);
             let repo = Arc::clone(&repo);
 
-            // FIXME!
-            let _ = self
+            let result = self
                 .fetch_and_process_competitor_stats(
                     season_id.to_string(),
-                    competitor.id,
+                    competitor.id.clone(),
                     competition.clone(),
                     client,
                     repo,
                 )
                 .await;
+
+            match result {
+                Ok(_) => (),
+                Err(e) => println!(
+                    "Failed to process competitor {} stats: {}",
+                    competitor.id, e
+                ),
+            }
         }
         Ok(())
     }
@@ -248,36 +254,40 @@ fn consumer_callback(
     repo: Arc<Mutex<PlayerStatsRepo>>,
     competition: EngineCompetition,
 ) {
-    // FIXME!
-    let stats_response = message.unwrap();
-    let team = Team {
-        id: stats_response.competitor.id,
-        name: stats_response.competitor.name,
-        abbreviation: stats_response.competitor.abbreviation,
-    };
-    for player_stat in stats_response.competitor.players {
-        let player = Player {
-            id: player_stat.id,
-            name: player_stat.name,
-            team: team.clone(),
-        };
+    match message {
+        Err(e) => println!("Consumer received error msg: {}", e),
+        Ok(_) => {
+            let stats_response = message.unwrap();
+            let team = Team {
+                id: stats_response.competitor.id,
+                name: stats_response.competitor.name,
+                abbreviation: stats_response.competitor.abbreviation,
+            };
+            for player_stat in stats_response.competitor.players {
+                let player = Player {
+                    id: player_stat.id,
+                    name: player_stat.name,
+                    team: team.clone(),
+                };
 
-        let metrics = vec![
-            RepoMetric::GoalsScored {
-                value: player_stat.statistics.goals_scored,
-            },
-            RepoMetric::Assists {
-                value: player_stat.statistics.assists,
-            },
-        ];
+                let metrics = vec![
+                    RepoMetric::GoalsScored {
+                        value: player_stat.statistics.goals_scored,
+                    },
+                    RepoMetric::Assists {
+                        value: player_stat.statistics.assists,
+                    },
+                ];
 
-        let player_stats = PlayerStats {
-            player,
-            metrics,
-            competition: competition.clone(),
-        };
+                let player_stats = PlayerStats {
+                    player,
+                    metrics,
+                    competition: competition.clone(),
+                };
 
-        let mut repo = repo.lock().unwrap();
-        repo.insert(player_stats);
+                let mut repo = repo.lock().unwrap();
+                repo.insert(player_stats);
+            }
+        }
     }
 }
