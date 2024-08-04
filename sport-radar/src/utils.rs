@@ -31,32 +31,37 @@ pub async fn get_json_response<T: DeserializeOwned>(client: &Client, url: &str) 
         let client = client.clone();
         let url = url.to_string();
         async move {
-            client
+            let response = client
                 .get(&url)
                 .header("accept", "application/json")
                 .timeout(Duration::from_secs(60))
                 .send()
                 .await
                 .map_err(|e| {
-                    anyhow!(
+                    let error_msg = format!(
                         "[{}] Failed to send request: {}",
                         e.status()
                             .map(|s| s.to_string())
-                            .unwrap_or("999".to_string()),
+                            .unwrap_or_else(|| "999".to_string()),
                         e
-                    )
-                })?
-                .json::<T>()
+                    );
+                    eprintln!("{}", error_msg);
+                    anyhow!(error_msg)
+                })?;
+
+            let status = response.status();
+            let response_text = response
+                .text()
                 .await
-                .map_err(|e| {
-                    anyhow!(
-                        "[{}] Failed to parse JSON response: {}",
-                        e.status()
-                            .map(|s| s.to_string())
-                            .unwrap_or("999".to_string()),
-                        e
-                    )
-                })
+                .map_err(|e| anyhow!("[{}] Failed to read response body: {}", status, e))?;
+
+            if status.is_success() {
+                // TODO! try to use response.json::<T>().await.map_err(...)
+                serde_json::from_str::<T>(&response_text)
+                    .map_err(|e| anyhow!("[{}] Failed to parse JSON response: {}", status, e))
+            } else {
+                Err(anyhow!("[{}] Error response: {}", status, response_text))
+            }
         }
     };
 

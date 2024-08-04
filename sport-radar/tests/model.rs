@@ -19,8 +19,8 @@ fn load_resource(file_name: &str) -> Result<PathBuf> {
 fn test_parse_competitions() -> Result<()> {
     let path = load_resource("competitions.json")?;
     let file_content = fs::read_to_string(path)?;
-    let competition: CompetitionsResponse = from_str(&file_content)?;
-    println!("{:?}", competition);
+    let _: CompetitionsResponse = from_str(&file_content)?;
+    // println!("{:?}", competition);
     Ok(())
 }
 
@@ -28,8 +28,8 @@ fn test_parse_competitions() -> Result<()> {
 fn test_parse_seasons() -> Result<()> {
     let path = load_resource("competition_seasons.json")?;
     let file_content = fs::read_to_string(path)?;
-    let season: SeasonsResponse = from_str(&file_content)?;
-    println!("{:?}", season);
+    let _: SeasonsResponse = from_str(&file_content)?;
+    // println!("{:?}", season);
     Ok(())
 }
 
@@ -37,8 +37,8 @@ fn test_parse_seasons() -> Result<()> {
 fn test_parse_competitor() -> Result<()> {
     let path = load_resource("season_competitors.json")?;
     let file_content = fs::read_to_string(path)?;
-    let competitor: CompetitorsResponse = from_str(&file_content)?;
-    println!("{:?}", competitor);
+    let _: CompetitorsResponse = from_str(&file_content)?;
+    // println!("{:?}", competitor);
     Ok(())
 }
 
@@ -46,7 +46,7 @@ fn test_parse_competitor() -> Result<()> {
 fn test_parse_player_statistics() -> Result<()> {
     let path = load_resource("seasonal_competitor_statistics.json")?;
     let file_content = fs::read_to_string(path)?;
-    let player_statistics: PlayerStatisticsResponse = from_str(&file_content)?;
-    println!("{:?}", player_statistics);
+    let _: PlayerStatisticsResponse = from_str(&file_content)?;
+    // println!("{:?}", player_statistics);
     Ok(())
 }
