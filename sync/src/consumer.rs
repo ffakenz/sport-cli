@@ -31,6 +31,35 @@ impl<T> Consumer<T> {
     }
 }
 
+impl<T: Send + Sync + 'static> Consumer<T> {
+    pub fn spawn<F, Fut>(
+        consumer_rate_limit: usize,
+        rx: mpsc::Receiver<T>,
+        shutdown_tx: broadcast::Sender<()>,
+        consumer_callback_factory: F,
+    ) -> tokio::task::JoinHandle<()>
+    where
+        F: Fn(T) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        let consumer_callback_factory: Arc<ConsumerCallback<T>> =
+            Arc::new(move |msg: T| Box::pin(consumer_callback_factory(msg)));
+
+        let mut consumer = Consumer::new(
+            consumer_rate_limit,
+            consumer_callback_factory,
+            rx,
+            shutdown_tx,
+        );
+
+        tokio::spawn(async move {
+            if let Err(e) = consumer.run().await {
+                eprintln!("Consumer failed: {:?}", e);
+            }
+        })
+    }
+}
+
 impl<T> Consumer<T> {
     pub async fn run(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
         // Rate limit enforcement

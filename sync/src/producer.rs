@@ -31,6 +31,30 @@ impl<T> Producer<T> {
     }
 }
 
+impl<T: Send + Sync + 'static> Producer<T> {
+    pub fn spawn<F, Fut>(
+        producer_rate_limit: usize,
+        tx: mpsc::Sender<T>,
+        shutdown_tx: broadcast::Sender<()>,
+        producer_callback_factory: F,
+    ) -> tokio::task::JoinHandle<()>
+    where
+        F: Fn() -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = T> + Send + 'static,
+    {
+        let producer_callback: Arc<ProducerCallback<T>> =
+            Arc::new(move || Box::pin(producer_callback_factory()));
+
+        let producer = Producer::new(producer_rate_limit, producer_callback, tx, shutdown_tx);
+
+        tokio::spawn(async move {
+            if let Err(e) = producer.run().await {
+                eprintln!("Producer failed: {:?}", e);
+            }
+        })
+    }
+}
+
 impl<T> Producer<T> {
     pub async fn run(&self) -> Result<(), Box<dyn Error + Send + Sync>> {
         // Rate limit enforcement

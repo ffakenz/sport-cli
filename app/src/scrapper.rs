@@ -12,11 +12,7 @@ use sport_radar::{
         Season, SeasonsResponse,
     },
 };
-use std::{
-    future::Future,
-    pin::Pin,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 use sync::{consumer::Consumer, producer::Producer};
 use tokio::sync::{broadcast, mpsc};
 
@@ -209,50 +205,25 @@ impl Scrapper {
         let (tx, rx) = mpsc::channel(rate_limit);
         let (shutdown_tx, _) = broadcast::channel(1);
 
-        // Create the producer
-        let producer_callback = {
+        // Spawn the producer
+        let producer_handle = Producer::spawn(rate_limit, tx, shutdown_tx.clone(), move || {
             let season_id = season_id.clone();
             let competitor_id = competitor_id.clone();
             let client = Arc::clone(&client);
-            Arc::new(move || {
-                let season_id = season_id.clone();
-                let competitor_id = competitor_id.clone();
-                let client = Arc::clone(&client);
-                Box::pin(
-                    async move { self::producer_callback(season_id, competitor_id, client).await },
-                )
-                    as Pin<Box<dyn Future<Output = Result<PlayerStatisticsResponse>> + Send>>
-            })
-        };
+            async move { producer_callback(season_id, competitor_id, client).await }
+        });
 
-        let producer = Producer::new(rate_limit, producer_callback, tx, shutdown_tx.clone());
-
-        let consumer_callback = {
-            let repo = Arc::clone(&repo);
-            let competition = competition.clone();
-            Arc::new(move |message: Result<PlayerStatisticsResponse>| {
+        // Spawn the consumer tasks
+        let consumer_handle = Consumer::spawn(
+            rate_limit,
+            rx,
+            shutdown_tx.clone(),
+            move |message: Result<PlayerStatisticsResponse>| {
                 let repo = Arc::clone(&repo);
                 let competition = competition.clone();
-                Box::pin(async move {
-                    self::consumer_callback(message, repo, competition);
-                }) as Pin<Box<dyn Future<Output = ()> + Send>>
-            })
-        };
-
-        let mut consumer = Consumer::new(rate_limit, consumer_callback, rx, shutdown_tx.clone());
-
-        // Spawn the producer and consumer tasks
-        let producer_handle = tokio::spawn(async move {
-            if let Err(e) = producer.run().await {
-                eprintln!("Producer failed: {:?}", e);
-            }
-        });
-
-        let consumer_handle = tokio::spawn(async move {
-            if let Err(e) = consumer.run().await {
-                eprintln!("Consumer failed: {:?}", e);
-            }
-        });
+                async move { consumer_callback(message, repo, competition) }
+            },
+        );
 
         // Wait for the producer and consumer to finish
         let _ = tokio::try_join!(producer_handle, consumer_handle);

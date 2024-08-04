@@ -1,5 +1,3 @@
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 use sync::producer::Producer;
 use tokio::sync::Mutex;
@@ -31,32 +29,24 @@ async fn test_producer() {
     let produced_items: Arc<Mutex<Vec<Message>>> = Arc::new(Mutex::new(Vec::new()));
     let items_per_invocation = 3;
 
-    // Define the callback
-    let callback_invocations_clone = callback_invocations.clone();
-    let produced_items_clone = produced_items.clone();
-    let callback = Arc::new(move || {
-        let callback_invocations = callback_invocations_clone.clone();
-        let produced_items = produced_items_clone.clone();
-        Box::pin(async_producer_callback_stub(
-            items_per_invocation,
-            callback_invocations,
-            produced_items,
-        )) as Pin<Box<dyn Future<Output = Message> + Send>>
-    });
-
     // Create a channel and a shutdown signal
     // note: the channel's capacity should be adjusted based on expected_nbr_of_calls (rate_limit * sleep_duration)
     let (tx, mut rx) = mpsc::channel(100);
     let (shutdown_tx, _) = broadcast::channel(1);
 
     // Create the producer
-    let rate_limit = 5;
-    let producer = Producer::new(rate_limit, callback, tx, shutdown_tx.clone());
+    let rate_limit: usize = 5;
+    // Define the callback
+    let callback_invocations_clone = callback_invocations.clone();
+    let produced_items_clone = produced_items.clone();
 
     // Spawn the producer
-    let producer_handle = tokio::spawn(async move {
-        if let Err(e) = producer.run().await {
-            eprintln!("Producer failed: {:?}", e);
+    let producer_handle = Producer::spawn(rate_limit, tx, shutdown_tx.clone(), move || {
+        let callback_invocations = callback_invocations_clone.clone();
+        let produced_items = produced_items_clone.clone();
+        async move {
+            async_producer_callback_stub(items_per_invocation, callback_invocations, produced_items)
+                .await
         }
     });
 

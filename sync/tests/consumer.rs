@@ -1,5 +1,3 @@
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 use sync::consumer::Consumer;
 use tokio::sync::Mutex;
@@ -27,19 +25,6 @@ async fn test_consumer() {
     let callback_invocations = Arc::new(Mutex::new(0));
     let processed_items: Arc<Mutex<Vec<Message>>> = Arc::new(Mutex::new(Vec::new()));
 
-    // Define the callback
-    let callback_invocations_clone = callback_invocations.clone();
-    let processed_items_clone = processed_items.clone();
-    let callback = Arc::new(move |message: Message| {
-        let callback_invocations = callback_invocations_clone.clone();
-        let processed_items = processed_items_clone.clone();
-        Box::pin(async_consumer_callback_stub(
-            message,
-            callback_invocations,
-            processed_items,
-        )) as Pin<Box<dyn Future<Output = ()> + Send>>
-    });
-
     // Create a channel and a shutdown signal
     // note: the channel's capacity should be adjusted based on messages_to_send
     let (tx, rx) = mpsc::channel(100);
@@ -47,14 +32,23 @@ async fn test_consumer() {
 
     // Create the consumer
     let rate_limit = 5;
-    let mut consumer = Consumer::new(rate_limit, callback, rx, shutdown_tx.clone());
+    // Define the callback
+    let callback_invocations_clone = callback_invocations.clone();
+    let processed_items_clone = processed_items.clone();
 
     // Spawn the consumer
-    let consumer_handle = tokio::spawn(async move {
-        if let Err(e) = consumer.run().await {
-            eprintln!("Consumer failed: {:?}", e);
-        }
-    });
+    let consumer_handle = Consumer::spawn(
+        rate_limit,
+        rx,
+        shutdown_tx.clone(),
+        move |message: Message| {
+            let callback_invocations = callback_invocations_clone.clone();
+            let processed_items = processed_items_clone.clone();
+            async move {
+                async_consumer_callback_stub(message, callback_invocations, processed_items).await
+            }
+        },
+    );
 
     // Send some messages
     let nbr_of_msgs = 50;
