@@ -29,6 +29,7 @@ async fn main() -> Result<()> {
 
     // Execute the scrapper with the query
     let repo: PlayerStatsRepo = scrapper.execute(sport_data_source, query).await?;
+    dbg!("nbr of scrapps: {:?}", repo.all().len());
 
     // Execute the engine query
     let engine = Engine;

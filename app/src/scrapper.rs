@@ -13,8 +13,6 @@ use sport_radar::{
     },
 };
 use std::sync::{Arc, Mutex};
-use sync::{consumer::Consumer, producer::Producer};
-use tokio::sync::{broadcast, mpsc};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Query {
@@ -173,67 +171,16 @@ impl Scrapper {
         competition: EngineCompetition,
         repo: Arc<Mutex<PlayerStatsRepo>>,
     ) -> Result<()> {
+        // TODO! optimize
         for competitor in competitors_response.season_competitors {
-            let client = Arc::clone(&client);
-            let repo = Arc::clone(&repo);
-
-            let result = self
-                .fetch_and_process_competitor_stats(
-                    season_id.to_string(),
-                    competitor.id.clone(),
-                    competition.clone(),
-                    client,
-                    repo,
-                )
-                .await;
-
-            match result {
-                Ok(_) => (),
-                Err(e) => println!(
-                    "Failed to process competitor {} stats: {}",
-                    competitor.id, e
-                ),
-            }
+            let message = producer_callback(
+                season_id.to_string().clone(),
+                competitor.id.clone(),
+                client.clone(),
+            )
+            .await;
+            consumer_callback(message, repo.clone(), competition.clone())
         }
-        Ok(())
-    }
-
-    async fn fetch_and_process_competitor_stats(
-        &self,
-        season_id: String,
-        competitor_id: String,
-        competition: EngineCompetition,
-        client: Arc<SportRadarClient>,
-        repo: Arc<Mutex<PlayerStatsRepo>>,
-    ) -> Result<()> {
-        // Create a channel and shutdown signal
-        let rate_limit = 30;
-        let (tx, rx) = mpsc::channel(rate_limit);
-        let (shutdown_tx, _) = broadcast::channel(1);
-
-        // Spawn the producer
-        let producer_handle = Producer::spawn(rate_limit, tx, shutdown_tx.clone(), move || {
-            let season_id = season_id.clone();
-            let competitor_id = competitor_id.clone();
-            let client = Arc::clone(&client);
-            async move { producer_callback(season_id, competitor_id, client).await }
-        });
-
-        // Spawn the consumer tasks
-        let consumer_handle = Consumer::spawn(
-            rate_limit,
-            rx,
-            shutdown_tx.clone(),
-            move |message: Result<PlayerStatisticsResponse>| {
-                let repo = Arc::clone(&repo);
-                let competition = competition.clone();
-                async move { consumer_callback(message, repo, competition) }
-            },
-        );
-
-        // Wait for the producer and consumer to finish
-        let _ = tokio::try_join!(producer_handle, consumer_handle);
-
         Ok(())
     }
 }
