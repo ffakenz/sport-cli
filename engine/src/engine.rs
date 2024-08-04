@@ -65,30 +65,40 @@ impl Engine {
 // Model for "query" engine
 // --------------------------------------------------
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Dimension {
+    #[default]
     Player,
     // TODO! support other dimensions
     Team,
 }
+unsafe impl Send for Dimension {}
+unsafe impl Sync for Dimension {}
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Sort {
+    #[default]
     Asc,
     Desc,
 }
+unsafe impl Send for Sort {}
+unsafe impl Sync for Sort {}
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Metric {
+    #[default]
+    #[serde(rename = "goals_scored")]
     GoalsScored,
     Assists,
     // TODO! support other metrics
 }
+unsafe impl Send for Metric {}
+unsafe impl Sync for Metric {}
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Query {
     pub event: String,
     pub location: String,
@@ -102,3 +112,5 @@ pub struct Query {
     pub sort: Sort,
     pub limit: u8,
 }
+unsafe impl Send for Query {}
+unsafe impl Sync for Query {}

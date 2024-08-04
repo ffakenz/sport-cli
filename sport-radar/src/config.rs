@@ -1,12 +1,16 @@
 use std::env;
 
-#[derive(Debug)]
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SportRadarConfig {
     api_key: String,
     access_level: String,
     language_code: String,
     format: String,
 }
+unsafe impl Send for SportRadarConfig {}
+unsafe impl Sync for SportRadarConfig {}
 
 impl SportRadarConfig {
     pub fn from_env() -> Self {

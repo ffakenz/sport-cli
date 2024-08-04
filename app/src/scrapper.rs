@@ -20,7 +20,7 @@ use std::{
 use sync::{consumer::Consumer, producer::Producer};
 use tokio::sync::{broadcast, mpsc};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Query {
     pub event: String,
     pub location: String,
@@ -28,6 +28,8 @@ pub struct Query {
     pub season_start: NaiveDate,
     pub season_end: NaiveDate,
 }
+unsafe impl Send for Query {}
+unsafe impl Sync for Query {}
 
 #[derive(Debug, Clone)]
 pub struct Scrapper;
