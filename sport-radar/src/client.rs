@@ -2,8 +2,8 @@ use crate::config::SportRadarConfig;
 use crate::model::{
     CompetitionsResponse, CompetitorsResponse, PlayerStatisticsResponse, SeasonsResponse,
 };
-use crate::utils::{construct_url, get_response_text};
-use anyhow::{Context, Result};
+use crate::utils::{construct_url, get_json_response};
+use anyhow::Result;
 use reqwest::Client;
 
 pub struct SportRadarClient {
@@ -35,11 +35,7 @@ impl SportRadarClient {
         let params = [("api_key", self.config.api_key())];
         let url = construct_url(&base_url, &params);
         dbg!("get_competitions: {:?}", &url);
-        let response_text = get_response_text(&self.client, &url).await?;
-        // dbg!("get_competitions: {:?}", &response_text);
-        let competitions: CompetitionsResponse =
-            serde_json::from_str(&response_text).context("Failed to parse competitions JSON")?;
-        Ok(competitions)
+        get_json_response(&self.client, &url).await
     }
 
     pub async fn get_competition_seasons(&self, competition_id: &str) -> Result<SeasonsResponse> {
@@ -57,11 +53,7 @@ impl SportRadarClient {
         let params = [("api_key", self.config.api_key())];
         let url = construct_url(&base_url, &params);
         dbg!("get_competition_seasons: {:?}", &url);
-        let response_text = get_response_text(&self.client, &url).await?;
-        // dbg!("get_competition_seasons: {:?}", &response_text);
-        let seasons: SeasonsResponse =
-            serde_json::from_str(&response_text).context("Failed to parse seasons JSON")?;
-        Ok(seasons)
+        get_json_response(&self.client, &url).await
     }
 
     pub async fn get_season_competitors(&self, season_id: &str) -> Result<CompetitorsResponse> {
@@ -75,11 +67,7 @@ impl SportRadarClient {
         let params = [("api_key", self.config.api_key())];
         let url: String = construct_url(&base_url, &params);
         dbg!("get_season_competitors: {:?}", &url);
-        let response_text = get_response_text(&self.client, &url).await?;
-        // dbg!("get_season_competitors: {:?}", &response_text);
-        let competitors: CompetitorsResponse =
-            serde_json::from_str(&response_text).context("Failed to parse competitors JSON")?;
-        Ok(competitors)
+        get_json_response(&self.client, &url).await
     }
 
     pub async fn get_seasonal_competitor_statistics(
@@ -102,10 +90,6 @@ impl SportRadarClient {
         let params = [("api_key", self.config.api_key())];
         let url = construct_url(&base_url, &params);
         dbg!("get_seasonal_competitor_statistics: {:?}", &url);
-        let response_text = get_response_text(&self.client, &url).await?;
-        // dbg!("get_seasonal_competitor_statistics: {:?}", &response_text);
-        let statistics: PlayerStatisticsResponse = serde_json::from_str(&response_text)
-            .context("Failed to parse player statistics JSON")?;
-        Ok(statistics)
+        get_json_response(&self.client, &url).await
     }
 }

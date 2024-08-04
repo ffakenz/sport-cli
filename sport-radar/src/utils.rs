@@ -1,5 +1,6 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Result};
 use reqwest::Client;
+use serde::de::DeserializeOwned;
 
 pub fn construct_url(base_url: &str, params: &[(&str, &str)]) -> String {
     let query_params: String = params
@@ -11,18 +12,14 @@ pub fn construct_url(base_url: &str, params: &[(&str, &str)]) -> String {
     format!("{}?{}", base_url, query_params)
 }
 
-pub async fn get_response_text(client: &Client, url: &str) -> Result<String> {
-    let response = client
+pub async fn get_json_response<T: DeserializeOwned>(client: &Client, url: &str) -> Result<T> {
+    client
         .get(url)
         .header("accept", "application/json")
         .send()
         .await
-        .context("Failed to send request")?;
-
-    let text = response
-        .text()
+        .map_err(|e| anyhow!("Failed to send request: {}", e))?
+        .json::<T>()
         .await
-        .context("Failed to read response text")?;
-
-    Ok(text)
+        .map_err(|e| anyhow!("Failed to parse JSON response: {}", e))
 }
