@@ -36,7 +36,7 @@ impl SportRadarClient {
         let url = construct_url(&base_url, &params);
         dbg!("get_competitions: {:?}", &url);
         let response_text = get_response_text(&self.client, &url).await?;
-        dbg!("get_competitions: {:?}", &response_text);
+        // dbg!("get_competitions: {:?}", &response_text);
         let competitions: CompetitionsResponse =
             serde_json::from_str(&response_text).context("Failed to parse competitions JSON")?;
         Ok(competitions)
@@ -54,14 +54,11 @@ impl SportRadarClient {
             self.config.language_code(),
             endpoint
         );
-        let params = [
-            ("competition_id", competition_id),
-            ("api_key", self.config.api_key()),
-        ];
+        let params = [("api_key", self.config.api_key())];
         let url = construct_url(&base_url, &params);
         dbg!("get_competition_seasons: {:?}", &url);
         let response_text = get_response_text(&self.client, &url).await?;
-        dbg!("get_competition_seasons: {:?}", &response_text);
+        // dbg!("get_competition_seasons: {:?}", &response_text);
         let seasons: SeasonsResponse =
             serde_json::from_str(&response_text).context("Failed to parse seasons JSON")?;
         Ok(seasons)
@@ -75,11 +72,11 @@ impl SportRadarClient {
             self.config.language_code(),
             endpoint
         );
-        let params = [("season_id", season_id), ("api_key", self.config.api_key())];
+        let params = [("api_key", self.config.api_key())];
         let url: String = construct_url(&base_url, &params);
         dbg!("get_season_competitors: {:?}", &url);
         let response_text = get_response_text(&self.client, &url).await?;
-        dbg!("get_season_competitors: {:?}", &response_text);
+        // dbg!("get_season_competitors: {:?}", &response_text);
         let competitors: CompetitorsResponse =
             serde_json::from_str(&response_text).context("Failed to parse competitors JSON")?;
         Ok(competitors)
@@ -102,15 +99,11 @@ impl SportRadarClient {
             self.config.language_code(),
             endpoint
         );
-        let params = [
-            ("season_id", season_id),
-            ("competitor_id", competitor_id),
-            ("api_key", self.config.api_key()),
-        ];
+        let params = [("api_key", self.config.api_key())];
         let url = construct_url(&base_url, &params);
         dbg!("get_seasonal_competitor_statistics: {:?}", &url);
         let response_text = get_response_text(&self.client, &url).await?;
-        dbg!("get_seasonal_competitor_statistics: {:?}", &response_text);
+        // dbg!("get_seasonal_competitor_statistics: {:?}", &response_text);
         let statistics: PlayerStatisticsResponse = serde_json::from_str(&response_text)
             .context("Failed to parse player statistics JSON")?;
         Ok(statistics)
