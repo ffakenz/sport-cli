@@ -136,7 +136,7 @@ pub struct CompetitorDetails {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompetitorStatistics {
-    pub average_ball_possession: u32,
+    pub average_ball_possession: f32,
     pub cards_given: u32,
     pub corner_kicks: u32,
     pub free_kicks: u32,
@@ -150,7 +150,7 @@ pub struct CompetitorStatistics {
     pub goals_scored_second_half: u32,
     pub matches_played: u32,
     pub offsides: u32,
-    pub penalties_missed: u32,
+    pub penalties_missed: Option<u32>,
     pub red_cards: u32,
     pub shots_blocked: u32,
     pub shots_off_target: u32,

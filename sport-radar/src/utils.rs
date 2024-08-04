@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::{anyhow, Result};
 use reqwest::Client;
 use serde::de::DeserializeOwned;
@@ -16,6 +18,7 @@ pub async fn get_json_response<T: DeserializeOwned>(client: &Client, url: &str) 
     client
         .get(url)
         .header("accept", "application/json")
+        .timeout(Duration::from_secs(60))
         .send()
         .await
         .map_err(|e| anyhow!("Failed to send request: {}", e))?

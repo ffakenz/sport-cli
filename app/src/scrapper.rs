@@ -203,9 +203,9 @@ impl Scrapper {
         repo: Arc<Mutex<PlayerStatsRepo>>,
     ) -> Result<()> {
         // Create a channel and shutdown signal
-        let (tx, rx) = mpsc::channel(100);
+        let rate_limit = 30;
+        let (tx, rx) = mpsc::channel(rate_limit);
         let (shutdown_tx, _) = broadcast::channel(1);
-        let rate_limit = 1;
 
         // Create the producer
         let producer_callback = {
