@@ -12,6 +12,7 @@ use engine::{
 };
 use sport_radar::client::SportRadarClient;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 mod scrapper;
 use scrapper::{Query, Scrapper};
@@ -27,24 +28,19 @@ async fn main() -> Result<()> {
         season_end: NaiveDate::from_ymd_opt(2024, 5, 19).unwrap(),
     };
 
-    // Initialize the SportRadarClient
+    let db = Arc::new(Mutex::new(Db::new()));
     let sport_data_source = Arc::new(SportRadarClient::from_env());
 
-    // Create a scrapper instance
-    let scrapper = Scrapper;
+    Scrapper
+        .execute(sport_data_source, &query, Arc::clone(&db))
+        .await?;
 
-    // Execute the scrapper with the query
-    let mut db = Db::new();
-
-    scrapper.execute(sport_data_source, &query, &mut db).await?;
-
+    let db = db.lock().await;
     dbg!(db.competitions.all().len());
     dbg!(db.teams.all().len());
     dbg!(db.players.all().len());
     dbg!(db.players_stats.all().len());
 
-    // Execute the engine query
-    let engine = Engine;
     let query = EngineQuery {
         event: query.event,
         location: query.location,
@@ -57,7 +53,7 @@ async fn main() -> Result<()> {
         limit: 2,
     };
 
-    let results: Vec<QueryResponse<PlayerDetails>> = engine.execute(
+    let results: Vec<QueryResponse<PlayerDetails>> = Engine.execute(
         &db.players,
         &db.teams,
         &db.players_stats,
@@ -65,7 +61,6 @@ async fn main() -> Result<()> {
         &query,
     );
 
-    // Print the results (for demonstration purposes)
     for result in results {
         dbg!(result);
     }

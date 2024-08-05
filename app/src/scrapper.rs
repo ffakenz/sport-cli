@@ -15,7 +15,8 @@ use sport_radar::{
         PlayerStatisticsResponse, Season, SeasonsResponse,
     },
 };
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Query {
@@ -36,7 +37,7 @@ impl Scrapper {
         &self,
         sport_data_source: Arc<SportRadarClient>,
         query: &Query,
-        db: &mut Db,
+        db: Arc<Mutex<Db>>,
     ) -> Result<()> {
         // Step 1: Get competitions
         println!("Step 1: Fetching competitions...");
@@ -164,19 +165,13 @@ impl Scrapper {
         season_id: &str,
         competitors_response: CompetitorsResponse,
         competition: EngineCompetition,
-        db: &mut Db,
+        db: Arc<Mutex<Db>>,
     ) -> Result<()> {
-        // Init repo references
-        let players_repo = Arc::new(Mutex::new(&mut db.players));
-        let teams_repo = Arc::new(Mutex::new(&mut db.teams));
-        let player_stats_repo = Arc::new(Mutex::new(&mut db.players_stats));
-        let competitions_repo = Arc::new(Mutex::new(&mut db.competitions));
-
         // Insert known competition
         {
-            let mut competitions_repo = competitions_repo.lock().unwrap();
-            competitions_repo.push(competition.clone());
-        };
+            let mut db_lock = db.lock().await;
+            db_lock.competitions.push(competition.clone());
+        }
 
         // TODO! optimize
         let num_producers = 3;
@@ -188,26 +183,24 @@ impl Scrapper {
 
         // let mut handles = vec![];
         for chunks in competitors_chunks {
-            // let future = async {
+            // let handle = tokio::task::spawn(async move {
             for competitor in chunks {
                 process_competitor(
                     season_id,
                     &competitor,
                     Arc::clone(&competition.id),
                     Arc::clone(&client),
-                    Arc::clone(&teams_repo),
-                    Arc::clone(&players_repo),
-                    Arc::clone(&player_stats_repo),
+                    Arc::clone(&db),
                 )
-                .await
+                .await;
             }
-            // };
+            // });
 
-            // let handle = tokio::task::spawn(future);
             // handles.push(handle);
         }
+
         // for handle in handles {
-        //     let _ = tokio::try_join!(handle);
+        //     let _ = tokio::try_join!(handle)?;
         // }
 
         Ok(())
@@ -219,18 +212,11 @@ async fn process_competitor(
     competitor: &Competitor,
     competition_id: Arc<String>,
     client: Arc<SportRadarClient>,
-    teams_repo: Arc<Mutex<&mut impl InMemoRepository<Team>>>,
-    players_repo: Arc<Mutex<&mut impl InMemoRepository<Player>>>,
-    player_stats_repo: Arc<Mutex<&mut impl InMemoRepository<PlayerStats>>>,
+    db: Arc<Mutex<Db>>,
 ) {
-    let message = producer_callback(season_id, &competitor.id, client.clone()).await;
-    consumer_callback(
-        message,
-        competition_id,
-        teams_repo,
-        players_repo,
-        player_stats_repo,
-    );
+    let message: Result<PlayerStatisticsResponse> =
+        producer_callback(season_id, &competitor.id, client.clone()).await;
+    consumer_callback(message, competition_id, db).await;
 }
 
 async fn producer_callback(
@@ -244,12 +230,10 @@ async fn producer_callback(
         .map_err(|e| anyhow!("Failed to fetch competitor statistics: {}", e))
 }
 
-fn consumer_callback(
+async fn consumer_callback(
     message: Result<PlayerStatisticsResponse>,
     competition_id: Arc<String>,
-    teams_repo: Arc<Mutex<&mut impl InMemoRepository<Team>>>,
-    players_repo: Arc<Mutex<&mut impl InMemoRepository<Player>>>,
-    player_stats_repo: Arc<Mutex<&mut impl InMemoRepository<PlayerStats>>>,
+    db: Arc<Mutex<Db>>,
 ) {
     match message {
         Err(e) => println!("Consumer received error msg: {}", e),
@@ -260,8 +244,9 @@ fn consumer_callback(
                 name: stats_response.competitor.name,
                 abbreviation: stats_response.competitor.abbreviation,
             };
-            let mut teams_repo = teams_repo.lock().unwrap();
-            teams_repo.push(team);
+
+            let mut players = vec![];
+            let mut players_stats = vec![];
 
             for player_stat in stats_response.competitor.players {
                 let player_id = Arc::new(player_stat.id);
@@ -270,8 +255,7 @@ fn consumer_callback(
                     name: player_stat.name,
                 };
 
-                let mut players_repo = players_repo.lock().unwrap();
-                players_repo.push(player);
+                players.push(player);
 
                 let metrics = vec![
                     RepoMetric::GoalsScored {
@@ -289,8 +273,17 @@ fn consumer_callback(
                     metrics,
                 };
 
-                let mut player_stats_repo = player_stats_repo.lock().unwrap();
-                player_stats_repo.push(player_stats);
+                players_stats.push(player_stats);
+            }
+
+            // Aquire db lock
+            let mut db_lock = db.lock().await;
+            db_lock.teams.push(team);
+            for player in players {
+                db_lock.players.push(player);
+            }
+            for player_stats in players_stats {
+                db_lock.players_stats.push(player_stats);
             }
         }
     }
