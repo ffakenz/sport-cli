@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  CARGO_TERM_COLOR: always
+  API_KEY: ${{ secrets.API_KEY }} # Store your API key in GitHub Secrets
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          # - beta
+          # - nightly
+    steps:
+    - uses: actions/checkout@v3
+    - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+    - name: Install cargo-audit
+      run: cargo install cargo-audit
+    - name: Build
+      run: cargo build --verbose
+    - name: Test
+      run: cargo test --verbose -- --nocapture
+      env:
+        API_KEY: ${{ secrets.API_KEY }}
+    - name: Clippy
+      run: cargo clippy --verbose -- -D warnings
+    - name: Audit
+      run: cargo audit
+    - name: Install
+      run: cargo install --path ./app --bin sport-cli
+    - name: e2e
+      run: |
+        API_KEY=$API_KEY sport-cli analytics \
+          --sport football \
+          --event "Premier's League"  \
+          --location England  \
+          --season-start 2024-08-17 \
+          --season-end 2025-05-25 \
+          --dimension player \
+          --metric score \
+          --gender male \
+          --sort desc \
+          --limit 10 \
+          --timeout 2000
