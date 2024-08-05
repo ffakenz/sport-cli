@@ -12,3 +12,11 @@ serde_derive = "1.0.204"
 anyhow = "1.0.86"
 chrono = { version = "0.4.38", features = ["serde"] }
 tokio = { version = "1.39.2", features = ["full"] }
+clap = { version = "4.5.13", features = ["derive"] }
+
+[build-dependencies]
+clap_derive = "4.5.13"
+
+[[bin]]
+name = "sport-cli"
+path = "src/main.rs"
