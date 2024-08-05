@@ -8,8 +8,8 @@ use serde_derive::{Deserialize, Serialize};
 use sport_radar::{
     client::SportRadarClient,
     model::{
-        CompetitionGender, CompetitionsResponse, CompetitorsResponse, PlayerStatisticsResponse,
-        Season, SeasonsResponse,
+        CompetitionGender, CompetitionsResponse, Competitor, CompetitorsResponse,
+        PlayerStatisticsResponse, Season, SeasonsResponse,
     },
 };
 use std::sync::{Arc, Mutex};
@@ -61,9 +61,9 @@ impl Scrapper {
 
         // Step 6: Fetch and process competitor statistics
         println!("Step 6: Fetching and processing competitor statistics...");
-        self.fetch_and_process_stats(
+        self.process_competitor_stats(
             sport_data_source,
-            &season.id,
+            season.id,
             competitors_response,
             competition,
             repo.clone(),
@@ -163,26 +163,64 @@ impl Scrapper {
             .map_err(|e| anyhow!("Failed to fetch season competitors: {}", e))
     }
 
-    async fn fetch_and_process_stats(
+    async fn process_competitor_stats(
         &self,
         client: Arc<SportRadarClient>,
-        season_id: &str,
+        season_id: String,
         competitors_response: CompetitorsResponse,
         competition: EngineCompetition,
         repo: Arc<Mutex<PlayerStatsRepo>>,
     ) -> Result<()> {
         // TODO! optimize
-        for competitor in competitors_response.season_competitors {
-            let message = producer_callback(
-                season_id.to_string().clone(),
-                competitor.id.clone(),
-                client.clone(),
-            )
-            .await;
-            consumer_callback(message, repo.clone(), competition.clone())
+        let num_producers = 3;
+        let competitors_chunks = competitors_response
+            .season_competitors
+            .chunks(competitors_response.season_competitors.len() / num_producers)
+            .map(|chunk| chunk.to_vec())
+            .collect::<Vec<_>>();
+
+        let mut handles = vec![];
+        for chunks in competitors_chunks {
+            let season_id_cloned = season_id.clone();
+            let competition_cloned = competition.clone();
+            let client_cloned = client.clone();
+            let repo_cloned = repo.clone();
+            let handle = tokio::task::spawn(async move {
+                for competitor in chunks {
+                    process_competitor(
+                        season_id_cloned.clone(),
+                        competitor.clone(),
+                        competition_cloned.clone(),
+                        client_cloned.clone(),
+                        repo_cloned.clone(),
+                    )
+                    .await
+                }
+            });
+            handles.push(handle);
         }
+        for handle in handles {
+            let _ = tokio::try_join!(handle);
+        }
+
         Ok(())
     }
+}
+
+async fn process_competitor(
+    season_id: String,
+    competitor: Competitor,
+    competition: EngineCompetition,
+    client: Arc<SportRadarClient>,
+    repo: Arc<Mutex<PlayerStatsRepo>>,
+) {
+    let message = producer_callback(
+        season_id.to_string().clone(),
+        competitor.id.clone(),
+        client.clone(),
+    )
+    .await;
+    consumer_callback(message, repo.clone(), competition.clone());
 }
 
 async fn producer_callback(
