@@ -8,10 +8,10 @@ cargo install --path ./app --bin sport-cli
 #   - the 10 players who scored the most, and
 API_KEY=$API_KEY sport-cli analytics \
     --sport football \
-    --event "Premier's League"  \
+    --event "Premier League"  \
     --location England  \
-    --season-start 2024-08-17 \
-    --season-end 2025-05-25 \
+    --season-start 2023-08-11 \
+    --season-end 2024-05-19 \
     --dimension player \
     --metric score \
     --gender male \
@@ -24,10 +24,10 @@ API_KEY=$API_KEY sport-cli analytics \
 #   - the 10 players who assisted the most.
 API_KEY=$API_KEY sport-cli analytics \
     --sport football \
-    --event "Premier's League"  \
+    --event "Premier League"  \
     --location England  \
-    --season-start 2024-08-17 \
-    --season-end 2025-05-25 \
+    --season-start 2023-08-11 \
+    --season-end 2024-05-19 \
     --dimension player \
     --metric assist \
     --gender male \

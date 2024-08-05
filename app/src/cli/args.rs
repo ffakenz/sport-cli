@@ -19,9 +19,14 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
+    /// Perform analytics queries on sports data.
     Analytics(AnalyticsArgs),
+    /// Perform queries on sport competitions data.
     Competitions(CompetitionsArgs),
+    /// Perform queries on sport seasons data, given competition.
     Seasons(SeasonsArgs),
+    /// Perform queries on sport teams data, given competition and season.
     Teams(TeamsArgs),
+    /// Perform queries on sport players data, given competition and season.
     Players(PlayersArgs),
 }
