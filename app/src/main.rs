@@ -4,10 +4,10 @@ use db::Db;
 use anyhow::Result;
 use chrono::NaiveDate;
 use engine::{
-    engine::{Dimension, Engine, Metric, Query as EngineQuery, QueryResponse, Sort},
+    engine::{Dimension, Engine, MetricKind, Query as EngineQuery, QueryResponse, Sort},
     repo::{
         in_memo::InMemoRepository,
-        model::{Gender, PlayerStats},
+        model::{Gender, PlayerDetails},
     },
 };
 use sport_radar::client::SportRadarClient;
@@ -52,13 +52,18 @@ async fn main() -> Result<()> {
         season_start: query.season_start,
         season_end: query.season_end,
         dimension: Dimension::Player,
-        metric: Metric::GoalsScored,
+        metric: MetricKind::GoalsScored,
         sort: Sort::Desc,
         limit: 2,
     };
 
-    let results: Vec<QueryResponse<&PlayerStats>> =
-        engine.execute(&db.players_stats, &db.competitions, &query);
+    let results: Vec<QueryResponse<PlayerDetails>> = engine.execute(
+        &db.players,
+        &db.teams,
+        &db.players_stats,
+        &db.competitions,
+        &query,
+    );
 
     // Print the results (for demonstration purposes)
     for result in results {

@@ -26,6 +26,11 @@ pub trait InMemoRepository<V: Default> {
         })
     }
 
+    /// Finds a value by its key.
+    fn find(&self, key: &Arc<String>) -> Option<&V> {
+        self.all().get(key)
+    }
+
     /// Returns an iterator that maps values based on a mapping function.
     /// The iterator produces a new HashMap where each value is transformed by the mapping function.
     fn map_iter<'a, F, W>(&'a self, mapper: F) -> impl Iterator<Item = (Arc<String>, W)>

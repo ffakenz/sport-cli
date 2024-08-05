@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::repo::{
     in_memo::InMemoRepository,
-    model::{Competition, Gender, Metric as ModelMetric, PlayerStats},
+    model::{Competition, Gender, Metric, Player, PlayerDetails, PlayerStats, Team},
 };
 
 #[derive(Debug, Clone)]
@@ -12,13 +12,15 @@ pub struct Engine;
 impl Engine {
     pub fn execute<'a>(
         &self,
+        players: &'a impl InMemoRepository<Player>,
+        teams: &'a impl InMemoRepository<Team>,
         player_stats: &'a impl InMemoRepository<PlayerStats>,
         competitions: &'a impl InMemoRepository<Competition>,
         query: &'a Query,
-    ) -> Vec<QueryResponse<&'a PlayerStats>> {
-        let default_metric = &ModelMetric::GoalsScored { value: 0 };
+    ) -> Vec<QueryResponse<PlayerDetails<'a>>> {
+        let default_metric = &Metric::GoalsScored { value: 0 };
 
-        let player_scores: Vec<(&PlayerStats, &ModelMetric)> = player_stats
+        let player_scores: Vec<(&PlayerStats, &Metric)> = player_stats
             .filter_iter(move |player_stats| {
                 competitions
                     .all()
@@ -33,15 +35,15 @@ impl Engine {
             })
             .map(move |(_, player_stats)| {
                 let metric = match query.metric {
-                    Metric::GoalsScored => player_stats
+                    MetricKind::GoalsScored => player_stats
                         .metrics
                         .iter()
-                        .find(|m| matches!(m, ModelMetric::GoalsScored { value: _ }))
+                        .find(|m| matches!(m, Metric::GoalsScored { value: _ }))
                         .unwrap_or(default_metric),
-                    Metric::Assists => player_stats
+                    MetricKind::Assists => player_stats
                         .metrics
                         .iter()
-                        .find(|m| matches!(m, ModelMetric::Assists { value: _ }))
+                        .find(|m| matches!(m, Metric::Assists { value: _ }))
                         .unwrap_or(default_metric),
                 };
 
@@ -58,10 +60,23 @@ impl Engine {
         sorted_scores
             .into_iter()
             .take(query.limit as usize)
-            .map(|(player, metric)| QueryResponse {
-                dimension: player,
-                metric: metric.clone(),
-                value: metric.value(),
+            .map(|(player_stats, metric)| {
+                let team = teams.find(&player_stats.team_id).unwrap();
+                let player = players.find(&player_stats.player_id).unwrap();
+                let competition = competitions.find(&player_stats.competition_id).unwrap();
+                let player_details = PlayerDetails {
+                    player_id: &player.id,
+                    player_name: &player.name,
+                    team_id: &team.id,
+                    team_name: &team.name,
+                    competition_id: &competition.id,
+                    competition_name: &competition.name,
+                };
+                QueryResponse {
+                    dimension: player_details,
+                    metric: query.metric.clone(),
+                    value: metric.value(),
+                }
             })
             .collect()
     }
@@ -94,15 +109,15 @@ unsafe impl Sync for Sort {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum Metric {
+pub enum MetricKind {
     #[default]
     #[serde(rename = "goals_scored")]
     GoalsScored,
     Assists,
     // TODO! support other metrics
 }
-unsafe impl Send for Metric {}
-unsafe impl Sync for Metric {}
+unsafe impl Send for MetricKind {}
+unsafe impl Sync for MetricKind {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Query {
@@ -113,7 +128,7 @@ pub struct Query {
     pub gender: Gender,
     pub dimension: Dimension,
     // TODO! support multiple metrics
-    pub metric: Metric,
+    pub metric: MetricKind,
     // TODO! support sorting by multiple fields
     pub sort: Sort,
     pub limit: u8,
@@ -125,7 +140,7 @@ unsafe impl Sync for Query {}
 pub struct QueryResponse<T> {
     pub dimension: T,
     // TODO! use Arc
-    pub metric: ModelMetric,
+    pub metric: MetricKind,
     pub value: u32,
 }
 unsafe impl<T> Send for QueryResponse<T> {}

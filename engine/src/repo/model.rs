@@ -79,3 +79,15 @@ pub struct PlayerStats {
 }
 unsafe impl Send for PlayerStats {}
 unsafe impl Sync for PlayerStats {}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PlayerDetails<'a> {
+    pub player_id: &'a str,
+    pub player_name: &'a str,
+    pub team_id: &'a str,
+    pub team_name: &'a str,
+    pub competition_id: &'a str,
+    pub competition_name: &'a str,
+}
+unsafe impl<'a> Send for PlayerDetails<'a> {}
+unsafe impl<'a> Sync for PlayerDetails<'a> {}

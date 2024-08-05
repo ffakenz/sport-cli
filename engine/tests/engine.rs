@@ -1,9 +1,6 @@
 use anyhow::Result;
 use chrono::NaiveDate;
-use engine::{
-    engine::*,
-    repo::model::{Gender, PlayerStats},
-};
+use engine::{engine::*, repo::model::Gender};
 use fixture::Fixture;
 
 mod fixture;
@@ -19,12 +16,14 @@ fn top_2_score_players() -> Result<()> {
         season_end: NaiveDate::from_ymd_opt(2024, 5, 19).unwrap(),
         gender: Gender::Male,
         dimension: Dimension::Player,
-        metric: Metric::GoalsScored,
+        metric: MetricKind::GoalsScored,
         sort: Sort::Desc,
         limit: 2,
     };
 
-    let result: Vec<QueryResponse<&PlayerStats>> = engine.execute(
+    let result = engine.execute(
+        &fixture.players_repo,
+        &fixture.teams_repo,
         &fixture.player_stats_repo,
         &fixture.competitions_repo,
         &query,
@@ -59,12 +58,14 @@ fn top_2_assist_players() -> Result<()> {
         season_end: NaiveDate::from_ymd_opt(2024, 5, 19).unwrap(),
         gender: Gender::Male,
         dimension: Dimension::Player,
-        metric: Metric::Assists,
+        metric: MetricKind::Assists,
         sort: Sort::Desc,
         limit: 2,
     };
 
-    let result: Vec<QueryResponse<&PlayerStats>> = engine.execute(
+    let result = engine.execute(
+        &fixture.players_repo,
+        &fixture.teams_repo,
         &fixture.player_stats_repo,
         &fixture.competitions_repo,
         &query,
