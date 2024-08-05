@@ -1,8 +1,14 @@
+mod db;
+use db::Db;
+
 use anyhow::Result;
 use chrono::NaiveDate;
 use engine::{
     engine::{Dimension, Engine, Metric, Query as EngineQuery, QueryResponse, Sort},
-    repo::{Gender, Player, PlayerStatsRepo},
+    repo::{
+        in_memo::InMemoRepository,
+        model::{Gender, PlayerStats},
+    },
 };
 use sport_radar::client::SportRadarClient;
 use std::sync::Arc;
@@ -28,8 +34,14 @@ async fn main() -> Result<()> {
     let scrapper = Scrapper;
 
     // Execute the scrapper with the query
-    let repo: PlayerStatsRepo = scrapper.execute(sport_data_source, &query).await?;
-    dbg!("nbr of scrapps: {:?}", repo.all().len());
+    let mut db = Db::new();
+
+    scrapper.execute(sport_data_source, &query, &mut db).await?;
+
+    dbg!(db.competitions.all().len());
+    dbg!(db.teams.all().len());
+    dbg!(db.players.all().len());
+    dbg!(db.players_stats.all().len());
 
     // Execute the engine query
     let engine = Engine;
@@ -45,11 +57,12 @@ async fn main() -> Result<()> {
         limit: 2,
     };
 
-    let results: Vec<QueryResponse<Player>> = engine.execute(repo, query);
+    let results: Vec<QueryResponse<&PlayerStats>> =
+        engine.execute(&db.players_stats, &db.competitions, &query);
 
     // Print the results (for demonstration purposes)
     for result in results {
-        dbg!("{:?}", result);
+        dbg!(result);
     }
 
     Ok(())
