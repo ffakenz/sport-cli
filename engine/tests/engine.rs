@@ -22,8 +22,8 @@ fn top_2_score_players() -> Result<()> {
         sort: Sort::Desc,
         limit: 2,
     };
-    let result: Vec<Player> = engine.execute(repo, query);
-    let result_ids: Vec<String> = result.into_iter().map(|p| p.id).collect();
+    let result: Vec<QueryResponse<Player>> = engine.execute(repo, query);
+    let result_ids: Vec<String> = result.into_iter().map(|p| p.dimension.id).collect();
 
     let expected_ids = vec![
         "sr:player:1630398".to_string(),
@@ -53,8 +53,8 @@ fn top_2_assist_players() -> Result<()> {
         sort: Sort::Desc,
         limit: 2,
     };
-    let result: Vec<Player> = engine.execute(repo, query);
-    let result_ids: Vec<String> = result.into_iter().map(|p| p.id).collect();
+    let result: Vec<QueryResponse<Player>> = engine.execute(repo, query);
+    let result_ids: Vec<String> = result.into_iter().map(|p| p.dimension.id).collect();
 
     let expected_ids = vec![
         "sr:player:952278".to_string(),

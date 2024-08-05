@@ -6,11 +6,11 @@ use serde_derive::{Deserialize, Serialize};
 pub struct Engine;
 
 impl Engine {
-    pub fn execute(&self, repo: PlayerStatsRepo, query: Query) -> Vec<Player> {
+    pub fn execute(&self, repo: PlayerStatsRepo, query: Query) -> Vec<QueryResponse<Player>> {
         let data: &Vec<PlayerStats> = repo.all();
 
         // Filter, transform the data
-        let mut player_scores: Vec<(Player, u32)> = data
+        let mut player_scores: Vec<(Player, Metric, u32)> = data
             .iter()
             .filter(|player_stats| {
                 player_stats.competition.name == query.event
@@ -39,21 +39,25 @@ impl Engine {
                         .unwrap_or(0),
                 };
 
-                (stats.player.clone(), metric_value)
+                (stats.player.clone(), query.metric.clone(), metric_value)
             })
             .collect();
 
         // Sort the players based on the metric value
         player_scores.sort_by(|a, b| match query.sort {
-            Sort::Asc => a.1.cmp(&b.1),
-            Sort::Desc => b.1.cmp(&a.1),
+            Sort::Asc => a.2.cmp(&b.2),
+            Sort::Desc => b.2.cmp(&a.2),
         });
 
         // Limit the results
-        let limited: Vec<Player> = player_scores
+        let limited: Vec<QueryResponse<Player>> = player_scores
             .into_iter()
             .take(query.limit as usize)
-            .map(|(player, _)| player)
+            .map(|(player, metric, value)| QueryResponse {
+                dimension: player,
+                metric,
+                value,
+            })
             .collect();
 
         limited
@@ -113,3 +117,12 @@ pub struct Query {
 }
 unsafe impl Send for Query {}
 unsafe impl Sync for Query {}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct QueryResponse<T> {
+    pub dimension: T,
+    pub metric: Metric,
+    pub value: u32,
+}
+unsafe impl<T> Send for QueryResponse<T> {}
+unsafe impl<T> Sync for QueryResponse<T> {}

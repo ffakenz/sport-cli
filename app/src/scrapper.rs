@@ -32,7 +32,7 @@ impl Scrapper {
     pub async fn execute(
         &self,
         sport_data_source: Arc<SportRadarClient>,
-        query: Query,
+        query: &Query,
     ) -> Result<PlayerStatsRepo> {
         // Initialize the repo
         let repo: Arc<Mutex<PlayerStatsRepo>> = Arc::new(Mutex::new(PlayerStatsRepo::new()));
@@ -43,7 +43,7 @@ impl Scrapper {
 
         // Step 2: Find the competition
         println!("Step 2: Finding the competition...");
-        let competition = self.find_competition(&competitions_response, &query)?;
+        let competition = self.find_competition(&competitions_response, query)?;
 
         // Step 3: Get competition seasons
         println!("Step 3: Fetching competition seasons...");
@@ -53,7 +53,7 @@ impl Scrapper {
 
         // Step 4: Find the season
         println!("Step 4: Finding the season...");
-        let season = self.find_season(&seasons_response, &query)?;
+        let season = self.find_season(&seasons_response, query)?;
 
         // Step 5: Get season competitors
         println!("Step 5: Fetching season competitors...");
