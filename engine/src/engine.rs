@@ -139,7 +139,6 @@ unsafe impl Sync for Query {}
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct QueryResponse<T> {
     pub dimension: T,
-    // TODO! use Arc
     pub metric: MetricKind,
     pub value: u32,
 }

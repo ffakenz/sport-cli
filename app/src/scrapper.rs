@@ -65,7 +65,7 @@ impl Scrapper {
         println!("Step 6: Fetching and processing competitor statistics...");
         self.process_competitor_stats(
             sport_data_source,
-            &season.id,
+            season.id,
             competitors_response,
             competition,
             db,
@@ -159,10 +159,10 @@ impl Scrapper {
             .map_err(|e| anyhow!("Failed to fetch season competitors: {}", e))
     }
 
-    async fn process_competitor_stats(
+    async fn process_competitor_stats<'a>(
         &self,
         client: Arc<SportRadarClient>,
-        season_id: &str,
+        season_id: String,
         competitors_response: CompetitorsResponse,
         competition: EngineCompetition,
         db: Arc<Mutex<Db>>,
@@ -173,54 +173,68 @@ impl Scrapper {
             db_lock.competitions.push(competition.clone());
         }
 
-        // TODO! optimize
-        let num_producers = 3;
+        // Divide and Conquer
+        let num_producers = 2;
         let competitors_chunks = competitors_response
             .season_competitors
             .chunks(competitors_response.season_competitors.len() / num_producers)
             .map(|chunk| chunk.to_vec())
             .collect::<Vec<_>>();
 
-        // let mut handles = vec![];
+        let mut handles = vec![];
         for chunks in competitors_chunks {
-            // let handle = tokio::task::spawn(async move {
-            for competitor in chunks {
-                process_competitor(
-                    season_id,
-                    &competitor,
-                    Arc::clone(&competition.id),
-                    Arc::clone(&client),
-                    Arc::clone(&db),
-                )
-                .await;
-            }
-            // });
+            let competition_id_cloned = Arc::clone(&competition.id);
+            let client_cloned = Arc::clone(&client);
+            let db_cloned = Arc::clone(&db);
+            let season_id_cloned = season_id.clone();
 
-            // handles.push(handle);
+            let future = async move {
+                for competitor in chunks {
+                    let db_clone_for_competitor = Arc::clone(&db_cloned);
+                    if let Err(e) = process_competitor(
+                        &season_id_cloned,
+                        &competitor,
+                        Arc::clone(&competition_id_cloned),
+                        Arc::clone(&client_cloned),
+                        db_clone_for_competitor,
+                    )
+                    .await
+                    {
+                        eprint!(
+                            "process_competitor failed for competitor {}:{}",
+                            competitor.id, e
+                        );
+                    }
+                }
+            };
+
+            let handle = tokio::task::spawn(future);
+            handles.push(handle);
         }
 
-        // for handle in handles {
-        //     let _ = tokio::try_join!(handle)?;
-        // }
+        for handle in handles {
+            let _ = tokio::try_join!(handle)?;
+        }
 
         Ok(())
     }
 }
 
-async fn process_competitor(
-    season_id: &str,
+async fn process_competitor<'a>(
+    season_id: &'a str,
     competitor: &Competitor,
     competition_id: Arc<String>,
     client: Arc<SportRadarClient>,
     db: Arc<Mutex<Db>>,
-) {
+) -> Result<()> {
     let message: Result<PlayerStatisticsResponse> =
         producer_callback(season_id, &competitor.id, client.clone()).await;
     consumer_callback(message, competition_id, db).await;
+    Ok(())
 }
 
-async fn producer_callback(
-    season_id: &str,
+async fn producer_callback<'a>(
+    season_id: &'a str,
     competitor_id: &str,
     client: Arc<SportRadarClient>,
 ) -> Result<PlayerStatisticsResponse> {
