@@ -76,7 +76,7 @@ impl<T> Consumer<T> {
                         // REVIEW! release await at interval duration
                         self.rx.recv().await {
                             // Execute the callback
-                            let consumer_callback = self.consumer_callback.clone();
+                            let consumer_callback = Arc::clone(&self.consumer_callback);
                             consumer_callback(data).await;
                         }
                 }

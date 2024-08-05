@@ -28,7 +28,7 @@ pub async fn get_json_response<T: DeserializeOwned>(client: &Client, url: &str) 
     };
 
     let retry_action = || {
-        let client = client.clone();
+        let client = Client::clone(client);
         let url = url.to_string();
         async move {
             let response = client

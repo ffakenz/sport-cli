@@ -37,13 +37,13 @@ async fn test_producer() {
     // Create the producer
     let rate_limit: usize = 5;
     // Define the callback
-    let callback_invocations_clone = callback_invocations.clone();
-    let produced_items_clone = produced_items.clone();
+    let callback_invocations_clone = Arc::clone(&callback_invocations);
+    let produced_items_clone = Arc::clone(&produced_items);
 
     // Spawn the producer
     let producer_handle = Producer::spawn(rate_limit, tx, shutdown_tx.clone(), move || {
-        let callback_invocations = callback_invocations_clone.clone();
-        let produced_items = produced_items_clone.clone();
+        let callback_invocations = Arc::clone(&callback_invocations_clone);
+        let produced_items = Arc::clone(&produced_items_clone);
         async move {
             async_producer_callback_stub(items_per_invocation, callback_invocations, produced_items)
                 .await

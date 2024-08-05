@@ -1,66 +1,69 @@
-use crate::repo::{Gender, Metric as RepoMetric, Player, PlayerStats, PlayerStatsRepo};
 use chrono::NaiveDate;
 use serde_derive::{Deserialize, Serialize};
+
+use crate::repo::{
+    in_memo::InMemoRepository,
+    model::{Competition, Gender, Metric as ModelMetric, PlayerStats},
+};
 
 #[derive(Debug, Clone)]
 pub struct Engine;
 
 impl Engine {
-    pub fn execute(&self, repo: PlayerStatsRepo, query: Query) -> Vec<QueryResponse<Player>> {
-        let data: &Vec<PlayerStats> = repo.all();
+    pub fn execute<'a>(
+        &self,
+        player_stats: &'a impl InMemoRepository<PlayerStats>,
+        competitions: &'a impl InMemoRepository<Competition>,
+        query: &'a Query,
+    ) -> Vec<QueryResponse<&'a PlayerStats>> {
+        let default_metric = &ModelMetric::GoalsScored { value: 0 };
 
-        // Filter, transform the data
-        let mut player_scores: Vec<(Player, Metric, u32)> = data
-            .iter()
-            .filter(|player_stats| {
-                player_stats.competition.name == query.event
-                    && player_stats.competition.location == query.location
-                    && player_stats.competition.gender == query.gender
-                    && player_stats.competition.season_start == query.season_start
-                    && player_stats.competition.season_end == query.season_end
+        let player_scores: Vec<(&PlayerStats, &ModelMetric)> = player_stats
+            .filter_iter(move |player_stats| {
+                competitions
+                    .all()
+                    .get(&player_stats.competition_id)
+                    .map_or(false, |competition| {
+                        competition.name == query.event
+                            && competition.location == query.location
+                            && competition.gender == query.gender
+                            && competition.season_start == query.season_start
+                            && competition.season_end == query.season_end
+                    })
             })
-            .map(|stats| {
-                let metric_value = match query.metric {
-                    Metric::GoalsScored => stats
+            .map(move |(_, player_stats)| {
+                let metric = match query.metric {
+                    Metric::GoalsScored => player_stats
                         .metrics
                         .iter()
-                        .find_map(|m| match m {
-                            RepoMetric::GoalsScored { value } => Some(*value),
-                            _ => None,
-                        })
-                        .unwrap_or(0),
-                    Metric::Assists => stats
+                        .find(|m| matches!(m, ModelMetric::GoalsScored { value: _ }))
+                        .unwrap_or(default_metric),
+                    Metric::Assists => player_stats
                         .metrics
                         .iter()
-                        .find_map(|m| match m {
-                            RepoMetric::Assists { value } => Some(*value),
-                            _ => None,
-                        })
-                        .unwrap_or(0),
+                        .find(|m| matches!(m, ModelMetric::Assists { value: _ }))
+                        .unwrap_or(default_metric),
                 };
 
-                (stats.player.clone(), query.metric.clone(), metric_value)
+                (player_stats, metric)
             })
             .collect();
 
-        // Sort the players based on the metric value
-        player_scores.sort_by(|a, b| match query.sort {
-            Sort::Asc => a.2.cmp(&b.2),
-            Sort::Desc => b.2.cmp(&a.2),
+        let mut sorted_scores = player_scores;
+        sorted_scores.sort_by(|a, b| match query.sort {
+            Sort::Asc => a.1.value().cmp(&b.1.value()),
+            Sort::Desc => b.1.value().cmp(&a.1.value()),
         });
 
-        // Limit the results
-        let limited: Vec<QueryResponse<Player>> = player_scores
+        sorted_scores
             .into_iter()
             .take(query.limit as usize)
-            .map(|(player, metric, value)| QueryResponse {
+            .map(|(player, metric)| QueryResponse {
                 dimension: player,
-                metric,
-                value,
+                metric: metric.clone(),
+                value: metric.value(),
             })
-            .collect();
-
-        limited
+            .collect()
     }
 }
 
@@ -121,7 +124,8 @@ unsafe impl Sync for Query {}
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct QueryResponse<T> {
     pub dimension: T,
-    pub metric: Metric,
+    // TODO! use Arc
+    pub metric: ModelMetric,
     pub value: u32,
 }
 unsafe impl<T> Send for QueryResponse<T> {}

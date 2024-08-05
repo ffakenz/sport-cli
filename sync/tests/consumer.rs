@@ -34,8 +34,8 @@ async fn test_consumer() {
     // Create the consumer
     let rate_limit = 5;
     // Define the callback
-    let callback_invocations_clone = callback_invocations.clone();
-    let processed_items_clone = processed_items.clone();
+    let callback_invocations_clone = Arc::clone(&callback_invocations);
+    let processed_items_clone = Arc::clone(&processed_items);
 
     // Spawn the consumer
     let consumer_handle = Consumer::spawn(
@@ -43,8 +43,8 @@ async fn test_consumer() {
         rx,
         shutdown_tx.clone(),
         move |message: Message| {
-            let callback_invocations = callback_invocations_clone.clone();
-            let processed_items = processed_items_clone.clone();
+            let callback_invocations = Arc::clone(&callback_invocations_clone);
+            let processed_items = Arc::clone(&processed_items_clone);
             async move {
                 async_consumer_callback_stub(message, callback_invocations, processed_items).await
             }

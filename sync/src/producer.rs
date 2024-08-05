@@ -67,7 +67,7 @@ impl<T> Producer<T> {
             tokio::select! {
                 _ = interval_timer.tick() => {
                     // Execute the callback
-                    let callback = self.producer_callback.clone();
+                    let callback = Arc::clone(&self.producer_callback);
                     let message = callback().await;
 
                     // Send message to the channel

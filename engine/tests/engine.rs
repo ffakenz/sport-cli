@@ -2,14 +2,15 @@ use anyhow::Result;
 use chrono::NaiveDate;
 use engine::{
     engine::*,
-    repo::{Gender, Player},
+    repo::model::{Gender, PlayerStats},
 };
+use fixture::Fixture;
 
 mod fixture;
 
 #[test]
 fn top_2_score_players() -> Result<()> {
-    let repo = fixture::repo_stub();
+    let fixture = Fixture::stub();
     let engine = Engine;
     let query = Query {
         event: "Premier League".to_string(),
@@ -22,8 +23,17 @@ fn top_2_score_players() -> Result<()> {
         sort: Sort::Desc,
         limit: 2,
     };
-    let result: Vec<QueryResponse<Player>> = engine.execute(repo, query);
-    let result_ids: Vec<String> = result.into_iter().map(|p| p.dimension.id).collect();
+
+    let result: Vec<QueryResponse<&PlayerStats>> = engine.execute(
+        &fixture.player_stats_repo,
+        &fixture.competitions_repo,
+        &query,
+    );
+
+    let result_ids: Vec<String> = result
+        .into_iter()
+        .map(|p| p.dimension.player_id.to_string())
+        .collect();
 
     let expected_ids = vec![
         "sr:player:1630398".to_string(),
@@ -40,7 +50,7 @@ fn top_2_score_players() -> Result<()> {
 
 #[test]
 fn top_2_assist_players() -> Result<()> {
-    let repo = fixture::repo_stub();
+    let fixture = Fixture::stub();
     let engine = Engine;
     let query = Query {
         event: "Premier League".to_string(),
@@ -53,8 +63,17 @@ fn top_2_assist_players() -> Result<()> {
         sort: Sort::Desc,
         limit: 2,
     };
-    let result: Vec<QueryResponse<Player>> = engine.execute(repo, query);
-    let result_ids: Vec<String> = result.into_iter().map(|p| p.dimension.id).collect();
+
+    let result: Vec<QueryResponse<&PlayerStats>> = engine.execute(
+        &fixture.player_stats_repo,
+        &fixture.competitions_repo,
+        &query,
+    );
+
+    let result_ids: Vec<String> = result
+        .into_iter()
+        .map(|p| p.dimension.player_id.to_string())
+        .collect();
 
     let expected_ids = vec![
         "sr:player:952278".to_string(),
