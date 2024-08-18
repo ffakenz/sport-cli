@@ -9,8 +9,6 @@ pub struct SportRadarConfig {
     language_code: String,
     format: String,
 }
-unsafe impl Send for SportRadarConfig {}
-unsafe impl Sync for SportRadarConfig {}
 
 impl SportRadarConfig {
     pub fn from_env() -> Self {

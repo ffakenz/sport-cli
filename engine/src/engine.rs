@@ -94,8 +94,6 @@ pub enum Dimension {
     // TODO! support other dimensions
     Team,
 }
-unsafe impl Send for Dimension {}
-unsafe impl Sync for Dimension {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -104,8 +102,6 @@ pub enum Sort {
     Asc,
     Desc,
 }
-unsafe impl Send for Sort {}
-unsafe impl Sync for Sort {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -116,8 +112,6 @@ pub enum MetricKind {
     Assists,
     // TODO! support other metrics
 }
-unsafe impl Send for MetricKind {}
-unsafe impl Sync for MetricKind {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Query {
@@ -133,8 +127,6 @@ pub struct Query {
     pub sort: Sort,
     pub limit: u8,
 }
-unsafe impl Send for Query {}
-unsafe impl Sync for Query {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct QueryResponse<T> {

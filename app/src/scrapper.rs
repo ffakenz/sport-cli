@@ -26,8 +26,6 @@ pub struct Query {
     pub season_start: NaiveDate,
     pub season_end: NaiveDate,
 }
-unsafe impl Send for Query {}
-unsafe impl Sync for Query {}
 
 #[derive(Debug, Clone)]
 pub struct Scrapper;

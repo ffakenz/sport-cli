@@ -9,8 +9,6 @@ pub enum Gender {
     Male,
     Female,
 }
-unsafe impl Send for Gender {}
-unsafe impl Sync for Gender {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Competition {
@@ -21,8 +19,6 @@ pub struct Competition {
     pub season_start: NaiveDate,
     pub season_end: NaiveDate,
 }
-unsafe impl Send for Competition {}
-unsafe impl Sync for Competition {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Team {
@@ -30,8 +26,6 @@ pub struct Team {
     pub name: String,
     pub abbreviation: String,
 }
-unsafe impl Send for Team {}
-unsafe impl Sync for Team {}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, PartialOrd, Eq, Ord)]
 #[serde(rename_all = "lowercase")]
@@ -44,8 +38,6 @@ pub enum Metric {
         value: u32,
     },
 }
-unsafe impl Send for Metric {}
-unsafe impl Sync for Metric {}
 
 impl Default for Metric {
     fn default() -> Self {
@@ -67,8 +59,6 @@ pub struct Player {
     pub id: Arc<String>,
     pub name: String,
 }
-unsafe impl Send for Player {}
-unsafe impl Sync for Player {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PlayerStats {
@@ -77,8 +67,6 @@ pub struct PlayerStats {
     pub competition_id: Arc<String>,
     pub metrics: Vec<Metric>,
 }
-unsafe impl Send for PlayerStats {}
-unsafe impl Sync for PlayerStats {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PlayerDetails<'a> {

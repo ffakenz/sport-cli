@@ -8,8 +8,6 @@ pub struct CompetitionCategory {
     pub id: String,
     pub name: String,
 }
-unsafe impl Send for CompetitionCategory {}
-unsafe impl Sync for CompetitionCategory {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -18,8 +16,6 @@ pub enum CompetitionGender {
     Men,
     Women,
 }
-unsafe impl Send for CompetitionGender {}
-unsafe impl Sync for CompetitionGender {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Competition {
@@ -28,16 +24,12 @@ pub struct Competition {
     pub gender: Option<CompetitionGender>,
     pub category: CompetitionCategory,
 }
-unsafe impl Send for Competition {}
-unsafe impl Sync for Competition {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CompetitionsResponse {
     pub generated_at: String,
     pub competitions: Vec<Competition>,
 }
-unsafe impl Send for CompetitionsResponse {}
-unsafe impl Sync for CompetitionsResponse {}
 
 // --------------------------------------------------
 // Model for the "competition_seasons" endpoint
@@ -51,16 +43,12 @@ pub struct Season {
     pub year: String,
     pub competition_id: String,
 }
-unsafe impl Send for Season {}
-unsafe impl Sync for Season {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SeasonsResponse {
     pub generated_at: String,
     pub seasons: Vec<Season>,
 }
-unsafe impl Send for SeasonsResponse {}
-unsafe impl Sync for SeasonsResponse {}
 
 // --------------------------------------------------
 // Model for the "season_competitors" endpoint
@@ -72,16 +60,12 @@ pub struct Competitor {
     pub short_name: String,
     pub abbreviation: String,
 }
-unsafe impl Send for Competitor {}
-unsafe impl Sync for Competitor {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CompetitorsResponse {
     pub generated_at: String,
     pub season_competitors: Vec<Competitor>,
 }
-unsafe impl Send for CompetitorsResponse {}
-unsafe impl Sync for CompetitorsResponse {}
 
 // --------------------------------------------------
 // Model for the "seasonal_competitor_statistics" endpoint
@@ -91,8 +75,6 @@ pub struct Sport {
     pub id: String,
     pub name: String,
 }
-unsafe impl Send for Sport {}
-unsafe impl Sync for Sport {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SeasonDetails {
@@ -104,8 +86,6 @@ pub struct SeasonDetails {
     pub competition_id: String,
     pub sport: Sport,
 }
-unsafe impl Send for SeasonDetails {}
-unsafe impl Sync for SeasonDetails {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PlayerStatistics {
@@ -126,8 +106,6 @@ pub struct PlayerStatistics {
     pub yellow_cards: u32,
     pub yellow_red_cards: u32,
 }
-unsafe impl Send for PlayerStatistics {}
-unsafe impl Sync for PlayerStatistics {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Player {
@@ -135,8 +113,6 @@ pub struct Player {
     pub name: String,
     pub statistics: PlayerStatistics,
 }
-unsafe impl Send for Player {}
-unsafe impl Sync for Player {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -145,8 +121,6 @@ pub enum CompetitorGender {
     Male,
     Female,
 }
-unsafe impl Send for CompetitorGender {}
-unsafe impl Sync for CompetitorGender {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CompetitorDetails {
@@ -159,8 +133,6 @@ pub struct CompetitorDetails {
     pub statistics: CompetitorStatistics,
     pub players: Vec<Player>,
 }
-unsafe impl Send for CompetitorDetails {}
-unsafe impl Sync for CompetitorDetails {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CompetitorStatistics {
@@ -189,8 +161,6 @@ pub struct CompetitorStatistics {
     pub yellow_cards: u32,
     pub yellow_red_cards: u32,
 }
-unsafe impl Send for CompetitorStatistics {}
-unsafe impl Sync for CompetitorStatistics {}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PlayerStatisticsResponse {
@@ -198,5 +168,3 @@ pub struct PlayerStatisticsResponse {
     pub season: SeasonDetails,
     pub competitor: CompetitorDetails,
 }
-unsafe impl Send for PlayerStatisticsResponse {}
-unsafe impl Sync for PlayerStatisticsResponse {}
