@@ -15,8 +15,7 @@ use sport_radar::{
         PlayerStatisticsResponse, Season, SeasonsResponse,
     },
 };
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Query {
@@ -167,8 +166,9 @@ impl Scrapper {
     ) -> Result<()> {
         // Insert known competition
         {
-            let mut db_lock = db.lock().await;
+            let mut db_lock = db.lock().unwrap();
             db_lock.competitions.push(competition.clone());
+            drop(db_lock);
         }
 
         // Divide and Conquer
@@ -289,7 +289,7 @@ async fn consumer_callback(
             }
 
             // Aquire db lock
-            let mut db_lock = db.lock().await;
+            let mut db_lock = db.lock().unwrap();
             db_lock.teams.push(team);
             for player in players {
                 db_lock.players.push(player);
@@ -297,6 +297,7 @@ async fn consumer_callback(
             for player_stats in players_stats {
                 db_lock.players_stats.push(player_stats);
             }
+            drop(db_lock);
         }
     }
 }

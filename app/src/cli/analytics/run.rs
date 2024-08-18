@@ -9,8 +9,7 @@ use engine::{
     repo::{in_memo::InMemoRepository, model::PlayerDetails},
 };
 use sport_radar::client::SportRadarClient;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 pub async fn run(query: Query) -> Result<()> {
     let db = Arc::new(Mutex::new(Db::new()));
@@ -20,7 +19,7 @@ pub async fn run(query: Query) -> Result<()> {
         .execute(sport_data_source, &query, Arc::clone(&db))
         .await?;
 
-    let db = db.lock().await;
+    let db = db.lock().unwrap();
     dbg!(db.competitions.all().len());
     dbg!(db.teams.all().len());
     dbg!(db.players.all().len());
@@ -49,6 +48,8 @@ pub async fn run(query: Query) -> Result<()> {
     for result in results {
         dbg!(result);
     }
+
+    drop(db);
 
     Ok(())
 }
