@@ -58,7 +58,7 @@ Once you’ve submitted a pull request, the maintainers will review your changes
 
 ### 🙏 Thank You!
 
-Your contributions help make **sport-cli** better for everyone. We appreciate your time and effort in improving the project. If you have any questions or need further assistance, feel free to reach out via GitHub or [franco.testagrossa@gmail.com](mailto:franco.testagrossa@gmail.com).
+Your contributions help make **sport-cli** better for everyone. We appreciate your time and effort in improving the project. If you have any questions or need further assistance, feel free to reach out via GitHub.
 
 ---
 
