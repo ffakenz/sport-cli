@@ -97,7 +97,7 @@ If you encounter any issues:
 1. Ensure your API key is correctly set in the environment variable `API_KEY`.
 2. Review the command syntax and options.
 
-For further assistance, please refer to the [Documentation](#) or contact support at [franco.testagrossa@gmail.com](mailto:franco.testagrossa@gmail.com).
+For further assistance, please refer to the [Documentation](#) or contact support via GitHub.
 
 ## 🤝 Contributing
 
